@@ -7,5 +7,5 @@ import (
 type Vertex struct {
 	label string
 
-	pos image.Point
+	pos *image.Point
 }

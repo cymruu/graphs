@@ -1,14 +1,12 @@
 package graphs
 
 import (
+	"image"
+	"math"
 	"math/rand"
 	"time"
 )
 
-type AdjacencyMatrixElem struct {
-	*Vertex
-	NumberOfEdges float64
-}
 type Graph struct {
 	Vertices        []*Vertex
 	AdjacencyMatrix []bool
@@ -21,7 +19,7 @@ var sourceUnix = rand.NewSource(time.Now().UnixNano())
 var staticSource = rand.NewSource(100023)
 var random = rand.New(sourceUnix)
 
-func CreateEmptyGraph(size int) *Graph {
+func CreateEmptyGraph(size uint32) *Graph {
 	g := &Graph{
 		Vertices:        make([]*Vertex, size),
 		AdjacencyMatrix: make([]bool, size*size),
@@ -34,17 +32,24 @@ func CreateEmptyGraph(size int) *Graph {
 func (g *Graph) Size() int {
 	return len(g.Vertices)
 }
-func (g *Graph) IndexToPos(i int) Pos {
-	return Pos{i % g.Size(), i / g.Size()}
-}
-func CreateRandomGraph(numberOfVertices int) *Graph {
+func CreateRandomGraph(numberOfVertices uint32) *Graph {
 	g := CreateEmptyGraph(numberOfVertices)
 	g.Vertices[0] = &Vertex{label: string(rune('A'))}
-	for i := 1; i < numberOfVertices; i++ {
+	for i := uint32(1); i < numberOfVertices; i++ {
 		vertex := &Vertex{label: string(rune('A' + i))}
 		g.Vertices[i] = vertex
-		randomVertexIndex := random.Intn(i)
+		randomVertexIndex := random.Intn(int(i)) + 1
 		g.AdjacencyMatrix[randomVertexIndex] = true
+	}
+	return g
+}
+func CreateGraph(adjm []bool, positions []image.Point) *Graph {
+	size := math.Sqrt(float64(len(adjm)))
+	g := CreateEmptyGraph(uint32(size))
+	g.AdjacencyMatrix = adjm
+	for i := 0; i < int(size); i++ {
+		g.Vertices[i] = &Vertex{label: string(rune('A' + i))}
+		g.Vertices[i].pos = &positions[i]
 	}
 	return g
 }

@@ -16,8 +16,10 @@ var vertexSize = 10
 
 func (g *Graph) placeVerticestInRandomPlaces() {
 	for _, vertex := range g.Vertices {
-		x, y := random.Intn(imageSize-vertexSize), random.Intn(imageSize-vertexSize)
-		vertex.pos = image.Point{x, y}
+		if vertex.pos == nil {
+			x, y := random.Intn(imageSize-vertexSize), random.Intn(imageSize-vertexSize)
+			vertex.pos = &image.Point{x, y}
+		}
 	}
 }
 func (g *Graph) ToImage() {
@@ -29,24 +31,16 @@ func (g *Graph) ToImage() {
 		vertexColor := image.Uniform{color.RGBA{0, 255, 0, 255}}
 		draw.Draw(img, point, &vertexColor, image.ZP, draw.Src)
 		fmt.Printf("%s pos: [%d,%d]\n", vertex.label, vertex.pos.X, vertex.pos.Y)
-		/*
-			int array[width * height];
-
-			 int SetElement(int row, int col, int value)
-			 {
-			    array[width * row + col] = value;
-			 }
-		*/
 		for i := 0; i < len(g.AdjacencyMatrix); i++ {
 			if g.AdjacencyMatrix[i] {
-				// start := g.Vertices[i%graphSize].pos
-				// end := image.Point{0, 0}
-				// drawLine(img, start, end, color.RGBA{0, 0, 0, 0})
+				start := g.Vertices[i%g.Size()].pos
+				end := g.Vertices[i/g.Size()].pos
+				drawLine(img, *start, *end, color.RGBA{0, 0, 0, 0})
 			}
 		}
-		out, _ := os.Create(fmt.Sprintf("./out/%d.png", time.Now().Unix()))
-		png.Encode(out, img)
 	}
+	out, _ := os.Create(fmt.Sprintf("./out/%d.png", time.Now().Unix()))
+	png.Encode(out, img)
 }
 func drawLine(img draw.Image, start, end image.Point,
 	fill color.Color) {
