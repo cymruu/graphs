@@ -38,7 +38,7 @@ func CreateRandomGraph(numberOfVertices uint32) *Graph {
 	for i := uint32(1); i < numberOfVertices; i++ {
 		vertex := &Vertex{label: string(rune('A' + i))}
 		g.Vertices[i] = vertex
-		randomVertexIndex := random.Intn(int(i))
+		randomVertexIndex := random.Intn(cap(g.AdjacencyMatrix))
 		g.AdjacencyMatrix[randomVertexIndex] = true
 	}
 	return g
