@@ -38,7 +38,7 @@ func CreateRandomGraph(numberOfVertices uint32) *Graph {
 	for i := uint32(1); i < numberOfVertices; i++ {
 		vertex := &Vertex{label: string(rune('A' + i))}
 		g.Vertices[i] = vertex
-		randomVertexIndex := random.Intn(int(i)) + 1
+		randomVertexIndex := random.Intn(int(i))
 		g.AdjacencyMatrix[randomVertexIndex] = true
 	}
 	return g
@@ -52,4 +52,18 @@ func CreateGraph(adjm []bool, positions []image.Point) *Graph {
 		g.Vertices[i].pos = &positions[i]
 	}
 	return g
+}
+func (g *Graph) IsEulers() bool {
+	//Euler stwierdził, że aby możliwe było zbudowanie takiej ścieżki, liczba wierzchołków nieparzystego stopnia musi wynosić 0 lub 2.
+
+	return false
+}
+func (g *Graph) Copy() *Graph {
+	graph := &Graph{
+		Vertices:        make([]*Vertex, len(g.Vertices)),
+		AdjacencyMatrix: make([]bool, len(g.AdjacencyMatrix)),
+	}
+	copy(graph.Vertices, g.Vertices)
+	copy(graph.AdjacencyMatrix, g.AdjacencyMatrix)
+	return graph
 }

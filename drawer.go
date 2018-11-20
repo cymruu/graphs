@@ -35,14 +35,20 @@ func (g *Graph) ToImage() {
 			if g.AdjacencyMatrix[i] {
 				start := g.Vertices[i%g.Size()].pos
 				end := g.Vertices[i/g.Size()].pos
-				drawLine(img, *start, *end, color.RGBA{0, 0, 0, 0})
+				if *start == *end { //draw loop to self
+					drawLine(img, start, &image.Point{X: start.X, Y: start.Y - 10}, color.RGBA{0, 0, 0, 0})
+					drawLine(img, &image.Point{X: start.X, Y: start.Y - 10}, &image.Point{X: start.X + 10, Y: start.Y - 10}, color.RGBA{0, 0, 0, 0})
+					drawLine(img, &image.Point{X: start.X + 10, Y: start.Y - 10}, end, color.RGBA{0, 0, 0, 0})
+				} else {
+					drawLine(img, start, end, color.RGBA{0, 0, 0, 0})
+				}
 			}
 		}
 	}
 	out, _ := os.Create(fmt.Sprintf("./out/%d.png", time.Now().Unix()))
 	png.Encode(out, img)
 }
-func drawLine(img draw.Image, start, end image.Point,
+func drawLine(img draw.Image, start, end *image.Point,
 	fill color.Color) {
 	x0, x1 := start.X, end.X
 	y0, y1 := start.Y, end.Y
