@@ -1,6 +1,7 @@
 package graphs
 
 import (
+	"fmt"
 	"image"
 	"math"
 	"math/rand"
@@ -53,10 +54,31 @@ func CreateGraph(adjm []bool, positions []image.Point) *Graph {
 	}
 	return g
 }
-func (g *Graph) IsEulers() bool {
-	//Euler stwierdził, że aby możliwe było zbudowanie takiej ścieżki, liczba wierzchołków nieparzystego stopnia musi wynosić 0 lub 2.
-
+func (g *Graph) CalculateDegrees() bool {
+	for i := 0; i < g.Size(); i++ {
+		degree := uint32(0)
+		for j := 0; j < g.Size(); j++ {
+			fmt.Print(g.AdjacencyMatrix[i*g.Size()+j], " ")
+			if g.AdjacencyMatrix[i*g.Size()+j] {
+				degree++
+			}
+		}
+		g.Vertices[i].degree = degree
+	}
 	return false
+}
+func (g *Graph) IsEulerian() bool {
+	//An Eulerian graph is a graph containing an Eulerian cycle.
+	// http://mathworld.wolfram.com/EulerianGraph.html
+	//Theorem 1: A graph G=(V(G),E(G)) is Eulerian if and only if each vertex has an even degree.
+	//(http://mathonline.wikidot.com/eulerian-graphs-and-semi-eulerian-graphs)
+	for _, vertex := range g.Vertices {
+		vertex.printDegree()
+		if vertex.degree%2 != 0 {
+			return false
+		}
+	}
+	return true
 }
 func (g *Graph) Copy() *Graph {
 	graph := &Graph{

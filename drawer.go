@@ -48,8 +48,7 @@ func (g *Graph) ToImage() {
 	out, _ := os.Create(fmt.Sprintf("./out/%d.png", time.Now().Unix()))
 	png.Encode(out, img)
 }
-func drawLine(img draw.Image, start, end *image.Point,
-	fill color.Color) {
+func drawLine(img draw.Image, start, end *image.Point, fill color.Color) {
 	x0, x1 := start.X, end.X
 	y0, y1 := start.Y, end.Y
 	Δx := math.Abs(float64(x1 - x0))
