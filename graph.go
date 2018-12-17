@@ -62,7 +62,6 @@ func (g *Graph) CalculateDegrees() bool {
 	for i := 0; i < g.Size(); i++ {
 		degree := uint32(0)
 		for j := 0; j < g.Size(); j++ {
-			fmt.Print(g.AdjacencyMatrix[i*g.Size()+j], " ")
 			if g.AdjacencyMatrix[i*g.Size()+j] {
 				degree++
 			}
@@ -156,22 +155,57 @@ func (g *Graph) IsEulerian() int {
 	}
 }
 func (g *Graph) RemoveEdge(v, u *Vertex) {
-	vIdx := g.getVertexIndex(v) //0
-	uIdx := g.getVertexIndex(u) //1
+	g.SetEdge(v, u, false)
+}
+func (g *Graph) AddEdge(v, u *Vertex) {
+	g.SetEdge(v, u, true)
+}
+func (g *Graph) SetEdge(v, u *Vertex, value bool) {
+	vIdx := g.getVertexIndex(v)
+	uIdx := g.getVertexIndex(u)
 
-	g.AdjacencyMatrix[vIdx*g.Size()+uIdx] = false
-	g.AdjacencyMatrix[uIdx*g.Size()+vIdx] = false
-	v.degree--
-	u.degree--
+	g.AdjacencyMatrix[vIdx*g.Size()+uIdx] = value
+	g.AdjacencyMatrix[uIdx*g.Size()+vIdx] = value
+	g.CalculateDegrees() //TODO: this can be done in a smarter way
 }
 func (g *Graph) isValidEdgeForEulerianCycle(u, v *Vertex) bool {
-	return true
+	//The edge between u, v is valid in one of the following two cases:
+	// 1) v is the only adjacent of vertex of u
+	if u.degree == 1 {
+
+		return true
+	}
+	// 2) If there are multiple adjacents, then u-v is not a bridge
+	// Do following steps to check if u-v is a bridge
+	// 2.a) count of vertices reachable from u
+	visited := make(map[*Vertex]bool)
+	counts := make([]int, 2)
+	g.DFS(u, visited)
+	counts[0] = len(visited)
+	// 2.b) Remove edge (u, v) and after removing the edge, count
+	// vertices reachable from u
+	visited = make(map[*Vertex]bool)
+	g.RemoveEdge(u, v)
+	g.DFS(u, visited)
+	counts[1] = len(visited)
+	// 2.c) Add the edge back to the graph
+	g.AddEdge(u, v)
+	return !(counts[0] > counts[1])
+}
+func PrintPath(path []*Vertex) {
+	fmt.Print("Path: ")
+	for _, v := range path {
+		// fmt.Printf("%+v", v)
+		fmt.Printf("%s -> ", v.label)
+	}
+	fmt.Println(path[len(path)-1].label)
 }
 func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail []*Vertex, index int) {
 	adajecent := g.GetVertexAdjacent(start)
 	for _, next := range adajecent {
 		if g.isValidEdgeForEulerianCycle(start, next) {
-			trail[index] = next
+			// trail[index] = next
+			trail = append(trail, next)
 			index++
 			g.RemoveEdge(start, next)
 			g.findNextVertexInEulerianPath(next, trail, index)
@@ -179,17 +213,8 @@ func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail []*Vertex, ind
 		}
 	}
 }
-func PrintPath(path []*Vertex) {
-	fmt.Print("Path: ")
-	for _, v := range path[0 : len(path)-1] {
-		// fmt.Printf("%+v", v)
-		fmt.Printf("%s -> ", v.label)
-	}
-	fmt.Println(path[len(path)-1].label)
-}
 func (g *Graph) FindEulerianPath() ([]*Vertex, error) {
 	var startVertex *Vertex
-	trail := make([]*Vertex, g.Size()+1)
 	switch g.IsEulerian() {
 	case 0:
 		return nil, errors.New("Not an eulerian graph")
@@ -203,7 +228,9 @@ func (g *Graph) FindEulerianPath() ([]*Vertex, error) {
 	case 2: //eulerian circle (0 odd vertices)
 		startVertex = g.Vertices[0]
 	}
-	trail[0] = startVertex
+	// trail := make([]*Vertex, (g.Size()*(g.Size()-1))/2)
+	trail := make([]*Vertex, 0)
+	trail = append(trail, startVertex)
 	g.findNextVertexInEulerianPath(startVertex, trail, 1)
 	return trail, nil
 }
