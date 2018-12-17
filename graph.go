@@ -1,6 +1,7 @@
 package graphs
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"math"
@@ -70,14 +71,19 @@ func (g *Graph) CalculateDegrees() bool {
 	}
 	return false
 }
-func (g *Graph) GetVertexAdjacent(vertex *Vertex) []*Vertex {
-	adjacent := make([]*Vertex, 0)
+func (g *Graph) getVertexIndex(vertex *Vertex) int {
 	var index int
 	for i := 0; i < g.Size(); i++ {
 		if g.Vertices[i] == vertex {
 			index = i
 		}
 	}
+	return index
+}
+func (g *Graph) GetVertexAdjacent(vertex *Vertex) []*Vertex {
+	adjacent := make([]*Vertex, 0)
+	index := g.getVertexIndex(vertex)
+
 	row := index % g.Size()
 	for i := 0; i < g.Size(); i++ {
 		if g.AdjacencyMatrix[row*g.Size()+i] {
@@ -148,6 +154,58 @@ func (g *Graph) IsEulerian() int {
 	} else {
 		return 0
 	}
+}
+func (g *Graph) RemoveEdge(v, u *Vertex) {
+	vIdx := g.getVertexIndex(v) //0
+	uIdx := g.getVertexIndex(u) //1
+
+	g.AdjacencyMatrix[vIdx*g.Size()+uIdx] = false
+	g.AdjacencyMatrix[uIdx*g.Size()+vIdx] = false
+	v.degree--
+	u.degree--
+}
+func (g *Graph) isValidEdgeForEulerianCycle(u, v *Vertex) bool {
+	return true
+}
+func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail []*Vertex, index int) {
+	adajecent := g.GetVertexAdjacent(start)
+	for _, next := range adajecent {
+		if g.isValidEdgeForEulerianCycle(start, next) {
+			trail[index] = next
+			index++
+			g.RemoveEdge(start, next)
+			g.findNextVertexInEulerianPath(next, trail, index)
+			break
+		}
+	}
+}
+func PrintPath(path []*Vertex) {
+	fmt.Print("Path: ")
+	for _, v := range path[0 : len(path)-1] {
+		// fmt.Printf("%+v", v)
+		fmt.Printf("%s -> ", v.label)
+	}
+	fmt.Println(path[len(path)-1].label)
+}
+func (g *Graph) FindEulerianPath() ([]*Vertex, error) {
+	var startVertex *Vertex
+	trail := make([]*Vertex, g.Size()+1)
+	switch g.IsEulerian() {
+	case 0:
+		return nil, errors.New("Not an eulerian graph")
+	case 1: //eulerian path (2 odd vertices)
+		for _, vertex := range g.Vertices {
+			if vertex.degree%2 != 0 {
+				startVertex = vertex
+				break
+			}
+		}
+	case 2: //eulerian circle (0 odd vertices)
+		startVertex = g.Vertices[0]
+	}
+	trail[0] = startVertex
+	g.findNextVertexInEulerianPath(startVertex, trail, 1)
+	return trail, nil
 }
 func (g *Graph) Copy() *Graph {
 	graph := &Graph{
