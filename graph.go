@@ -34,15 +34,22 @@ func CreateEmptyGraph(size uint32) *Graph {
 func (g *Graph) Size() int {
 	return len(g.Vertices)
 }
-func CreateRandomGraph(numberOfVertices uint32) *Graph {
-	g := CreateEmptyGraph(numberOfVertices)
-	g.Vertices[0] = &Vertex{label: string(rune('A'))}
-	for i := uint32(1); i < numberOfVertices; i++ {
+func CreateRandomGraph(numberOfVertices int, probability float64) *Graph {
+	g := CreateEmptyGraph(uint32(numberOfVertices))
+	for i := 0; i < numberOfVertices; i++ {
 		vertex := &Vertex{label: string(rune('A' + i))}
 		g.Vertices[i] = vertex
-		randomVertexIndex := random.Intn(cap(g.AdjacencyMatrix))
-		g.AdjacencyMatrix[randomVertexIndex] = true
 	}
+	for i := 0; i < len(g.Vertices); i++ {
+		for j := 0; j < len(g.Vertices); j++ {
+			if g.Vertices[i] != g.Vertices[j] {
+				if random.Float64() > probability {
+					g.AddEdge(g.Vertices[i], g.Vertices[j])
+				}
+			}
+		}
+	}
+	g.CalculateDegrees()
 	return g
 }
 func CreateGraph(adjm []bool, positions []image.Point) *Graph {
@@ -70,14 +77,14 @@ func (g *Graph) CalculateDegrees() bool {
 	}
 	return false
 }
+
 func (g *Graph) getVertexIndex(vertex *Vertex) int {
-	var index int
 	for i := 0; i < g.Size(); i++ {
 		if g.Vertices[i] == vertex {
-			index = i
+			return i
 		}
 	}
-	return index
+	return -1
 }
 func (g *Graph) GetVertexAdjacent(vertex *Vertex) []*Vertex {
 	adjacent := make([]*Vertex, 0)
@@ -101,7 +108,6 @@ func (g *Graph) DFS(vertex *Vertex, visited map[*Vertex]bool) {
 	}
 }
 
-//
 func (g *Graph) IsConnected() bool {
 	visited := make(map[*Vertex]bool)
 	for _, vertex := range g.Vertices {
@@ -194,18 +200,18 @@ func (g *Graph) isValidEdgeForEulerianCycle(u, v *Vertex) bool {
 }
 func PrintPath(path []*Vertex) {
 	fmt.Print("Path: ")
-	for _, v := range path {
+	for _, v := range path[0 : len(path)-2] {
 		// fmt.Printf("%+v", v)
 		fmt.Printf("%s -> ", v.label)
 	}
 	fmt.Println(path[len(path)-1].label)
 }
-func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail []*Vertex, index int) {
+func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail *[]*Vertex, index int) {
 	adajecent := g.GetVertexAdjacent(start)
 	for _, next := range adajecent {
 		if g.isValidEdgeForEulerianCycle(start, next) {
 			// trail[index] = next
-			trail = append(trail, next)
+			*trail = append(*trail, next)
 			index++
 			g.RemoveEdge(start, next)
 			g.findNextVertexInEulerianPath(next, trail, index)
@@ -231,15 +237,12 @@ func (g *Graph) FindEulerianPath() ([]*Vertex, error) {
 	// trail := make([]*Vertex, (g.Size()*(g.Size()-1))/2)
 	trail := make([]*Vertex, 0)
 	trail = append(trail, startVertex)
-	g.findNextVertexInEulerianPath(startVertex, trail, 1)
+	g.findNextVertexInEulerianPath(startVertex, &trail, 1)
 	return trail, nil
 }
-func (g *Graph) Copy() *Graph {
-	graph := &Graph{
-		Vertices:        make([]*Vertex, len(g.Vertices)),
-		AdjacencyMatrix: make([]bool, len(g.AdjacencyMatrix)),
+func (g *Graph) RandomizePoints() {
+	for _, vertex := range g.Vertices {
+		vertex.pos.X = int(random.Int31n(int32(imageSize - vertexSize)))
+		vertex.pos.Y = int(random.Int31n(int32(imageSize - vertexSize)))
 	}
-	copy(graph.Vertices, g.Vertices)
-	copy(graph.AdjacencyMatrix, g.AdjacencyMatrix)
-	return graph
 }
