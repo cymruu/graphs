@@ -9,12 +9,27 @@ import (
 	"math"
 	"os"
 	"time"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
+
+	"golang.org/x/image/font/basicfont"
 )
 
 var imageSize = 640
 var vertexSize = 10
 
-func (g *Graph) placeVerticestInRandomPlaces() {
+func drawLabel(img *image.RGBA, x, y int, label string) {
+	color := color.RGBA{255, 0, 0, 255}
+	drawer := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(color),
+		Face: basicfont.Face7x13,
+		Dot:  fixed.P(x, y),
+	}
+	drawer.DrawString(label)
+}
+func (g *Graph) assignRandomPositionsToVertexesWithoutPosition() {
 	for _, vertex := range g.Vertices {
 		if vertex.pos == nil {
 			x, y := random.Intn(imageSize-vertexSize), random.Intn(imageSize-vertexSize)
@@ -25,11 +40,12 @@ func (g *Graph) placeVerticestInRandomPlaces() {
 func (g *Graph) ToImage() {
 	img := image.NewRGBA(image.Rect(0, 0, imageSize, imageSize))
 	draw.Draw(img, img.Bounds(), &image.Uniform{color.RGBA{0, 100, 0, 255}}, image.ZP, draw.Src)
-	g.placeVerticestInRandomPlaces()
+	g.assignRandomPositionsToVertexesWithoutPosition()
 	for _, vertex := range g.Vertices {
 		point := image.Rect(vertex.pos.X, vertex.pos.Y, vertex.pos.X+vertexSize, vertex.pos.Y+vertexSize)
 		vertexColor := image.Uniform{color.RGBA{0, 255, 0, 255}}
 		draw.Draw(img, point, &vertexColor, image.ZP, draw.Src)
+		drawLabel(img, vertex.pos.X+vertexSize, vertex.pos.Y-vertexSize, vertex.label)
 		fmt.Printf("%s pos: [%d,%d]\n", vertex.label, vertex.pos.X, vertex.pos.Y)
 		for i := 0; i < len(g.AdjacencyMatrix); i++ {
 			if g.AdjacencyMatrix[i] {
