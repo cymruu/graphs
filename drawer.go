@@ -52,17 +52,18 @@ func (g *Graph) ToImage() {
 				start := g.Vertices[i%g.Size()].pos
 				end := g.Vertices[i/g.Size()].pos
 				if *start == *end { //draw loop to self
-					drawLine(img, start, &image.Point{X: start.X, Y: start.Y - 10}, color.RGBA{0, 0, 0, 0})
-					drawLine(img, &image.Point{X: start.X, Y: start.Y - 10}, &image.Point{X: start.X + 10, Y: start.Y - 10}, color.RGBA{0, 0, 0, 0})
-					drawLine(img, &image.Point{X: start.X + 10, Y: start.Y - 10}, end, color.RGBA{0, 0, 0, 0})
+					drawLine(img, start, &image.Point{X: start.X, Y: start.Y - 10}, color.RGBA{0, 0, 0, 1})
+					drawLine(img, &image.Point{X: start.X, Y: start.Y - 10}, &image.Point{X: start.X + 10, Y: start.Y - 10}, color.RGBA{0, 0, 0, 1})
+					drawLine(img, &image.Point{X: start.X + 10, Y: start.Y - 10}, end, color.RGBA{0, 0, 0, 1})
 				} else {
-					drawLine(img, start, end, color.RGBA{0, 0, 0, 0})
+					drawLine(img, start, end, color.RGBA{0, 0, 0, 1})
 				}
 			}
 		}
 	}
-	out, _ := os.Create(fmt.Sprintf("./out/%d.png", time.Now().Unix()))
+	out, _ := os.Create(fmt.Sprintf("./results/%d.png", time.Now().Unix()))
 	png.Encode(out, img)
+	out.Close()
 }
 func drawLine(img draw.Image, start, end *image.Point, fill color.Color) {
 	x0, x1 := start.X, end.X

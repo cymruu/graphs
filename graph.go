@@ -1,7 +1,6 @@
 package graphs
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	"math"
@@ -16,6 +15,12 @@ type Graph struct {
 type Pos struct {
 	X, Y int
 }
+
+const (
+	NoPath  int = iota
+	Path        = iota
+	Circuit     = iota
+)
 
 var sourceUnix = rand.NewSource(time.Now().UnixNano())
 var staticSource = rand.NewSource(100023)
@@ -43,7 +48,7 @@ func CreateRandomGraph(numberOfVertices int, probability float64) *Graph {
 	for i := 0; i < len(g.Vertices); i++ {
 		for j := 0; j < len(g.Vertices); j++ {
 			if g.Vertices[i] != g.Vertices[j] {
-				if random.Float64() > probability {
+				if random.Float64() < probability {
 					g.AddEdge(g.Vertices[i], g.Vertices[j])
 				}
 			}
@@ -119,7 +124,7 @@ func (g *Graph) IsConnected() bool {
 			start = vertex //select first Vertex with edge to start IsConnected Algorithm from
 		}
 	}
-	if start == nil {
+	if start == nil && len(g.Vertices) == 1 {
 		return true //TODO: A graph with just one vertex is connected. An edgeless graph with two or more vertices is disconnected.
 	}
 	g.DFS(start, visited)
@@ -144,7 +149,7 @@ func (g *Graph) IsEulerian() int {
 	//Algorithm:
 	//https://www.geeksforgeeks.org/fleurys-algorithm-for-printing-eulerian-path/
 	if !g.IsConnected() {
-		return 0
+		return NoPath
 	}
 	odd := 0
 	for _, vertex := range g.Vertices {
@@ -153,11 +158,11 @@ func (g *Graph) IsEulerian() int {
 		}
 	}
 	if odd == 0 {
-		return 2
+		return Circuit
 	} else if odd == 2 {
-		return 1
+		return Path
 	} else {
-		return 0
+		return NoPath
 	}
 }
 func (g *Graph) RemoveEdge(v, u *Vertex) {
@@ -172,7 +177,14 @@ func (g *Graph) SetEdge(v, u *Vertex, value bool) {
 
 	g.AdjacencyMatrix[vIdx*g.Size()+uIdx] = value
 	g.AdjacencyMatrix[uIdx*g.Size()+vIdx] = value
-	g.CalculateDegrees() //TODO: this can be done in a smarter way
+	if value == true {
+		g.Vertices[uIdx].degree++
+		g.Vertices[vIdx].degree++
+	} else {
+		g.Vertices[uIdx].degree--
+		g.Vertices[vIdx].degree--
+	}
+
 }
 func (g *Graph) isValidEdgeForEulerianCycle(u, v *Vertex) bool {
 	//The edge between u, v is valid in one of the following two cases:
@@ -200,48 +212,61 @@ func (g *Graph) isValidEdgeForEulerianCycle(u, v *Vertex) bool {
 }
 func PrintPath(path []*Vertex) {
 	fmt.Print("Path: ")
-	for _, v := range path[0 : len(path)-2] {
+	for _, v := range path[0 : len(path)-1] {
 		// fmt.Printf("%+v", v)
 		fmt.Printf("%s -> ", v.label)
 	}
 	fmt.Println(path[len(path)-1].label)
 }
-func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail *[]*Vertex, index int) {
+func (g *Graph) findNextVertexInEulerianPath(start *Vertex, trail *[]*Vertex) { //TODO: index is unnescessary
 	adajecent := g.GetVertexAdjacent(start)
 	for _, next := range adajecent {
 		if g.isValidEdgeForEulerianCycle(start, next) {
 			// trail[index] = next
 			*trail = append(*trail, next)
-			index++
 			g.RemoveEdge(start, next)
-			g.findNextVertexInEulerianPath(next, trail, index)
+			g.findNextVertexInEulerianPath(next, trail)
 			break
 		}
 	}
 }
-func (g *Graph) FindEulerianPath() ([]*Vertex, error) {
+func (g *Graph) copy() *Graph {
+	new_g := &Graph{
+		Vertices:        make([]*Vertex, len(g.Vertices)),
+		AdjacencyMatrix: make([]bool, len(g.AdjacencyMatrix)),
+	}
+	copy(new_g.Vertices, g.Vertices)
+	copy(new_g.AdjacencyMatrix, g.AdjacencyMatrix)
+	return new_g
+}
+func (g *Graph) FindEulerianPath() ([]*Vertex, int) {
+	graphCopy := g.copy()
 	var startVertex *Vertex
-	switch g.IsEulerian() {
-	case 0:
-		return nil, errors.New("Not an eulerian graph")
+	gType := graphCopy.IsEulerian()
+	switch gType {
+	case NoPath:
+		return nil, NoPath
 	case 1: //eulerian path (2 odd vertices)
-		for _, vertex := range g.Vertices {
+		for _, vertex := range graphCopy.Vertices {
 			if vertex.degree%2 != 0 {
 				startVertex = vertex
 				break
 			}
 		}
 	case 2: //eulerian circle (0 odd vertices)
-		startVertex = g.Vertices[0]
+		startVertex = graphCopy.Vertices[0]
 	}
-	// trail := make([]*Vertex, (g.Size()*(g.Size()-1))/2)
 	trail := make([]*Vertex, 0)
 	trail = append(trail, startVertex)
-	g.findNextVertexInEulerianPath(startVertex, &trail, 1)
-	return trail, nil
+	graphCopy.findNextVertexInEulerianPath(startVertex, &trail)
+	g.CalculateDegrees()
+	return trail, gType
 }
 func (g *Graph) RandomizePoints() {
 	for _, vertex := range g.Vertices {
+		if vertex.pos == nil {
+			vertex.pos = &image.Point{}
+		}
 		vertex.pos.X = int(random.Int31n(int32(imageSize - vertexSize)))
 		vertex.pos.Y = int(random.Int31n(int32(imageSize - vertexSize)))
 	}
