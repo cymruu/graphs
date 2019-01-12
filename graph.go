@@ -5,12 +5,16 @@ import (
 	"image"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 )
 
+type VertexList []*Vertex
+type AdajencyMatrix []bool
+
 type Graph struct {
-	Vertices        []*Vertex
-	AdjacencyMatrix []bool
+	Vertices        VertexList
+	AdjacencyMatrix AdajencyMatrix
 }
 type Pos struct {
 	X, Y int
@@ -43,6 +47,7 @@ func CreateRandomGraph(numberOfVertices int, probability float64) *Graph {
 	g := CreateEmptyGraph(uint32(numberOfVertices))
 	for i := 0; i < numberOfVertices; i++ {
 		vertex := &Vertex{label: string(rune('A' + i))}
+		vertex.pos = &image.Point{0, 0}
 		g.Vertices[i] = vertex
 	}
 	for i := 0; i < len(g.Vertices); i++ {
@@ -270,4 +275,49 @@ func (g *Graph) RandomizePoints() {
 		vertex.pos.X = int(random.Int31n(int32(imageSize - vertexSize)))
 		vertex.pos.Y = int(random.Int31n(int32(imageSize - vertexSize)))
 	}
+}
+func (vl VertexList) String() string {
+	var sb = strings.Builder{}
+	for _, vertex := range vl {
+		sb.WriteString(fmt.Sprintf("%s: [%s] degree: %d\n", vertex.label, vertex.pos, vertex.degree))
+	}
+	return sb.String()
+
+}
+func booltonumber(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
+func (g *Graph) PrintAdejencyMatrix() string {
+	var sb = strings.Builder{}
+	i := 1
+	for _, vertex := range g.Vertices {
+		sb.WriteString("\t")
+		sb.WriteString(vertex.label)
+		if i%g.Size() == 0 {
+			sb.WriteString("\n")
+		}
+		i++
+	}
+	i = 0
+	for _, v := range g.AdjacencyMatrix {
+		if i%g.Size() == 0 {
+			sb.WriteString(fmt.Sprintf("%s\t", g.Vertices[i/g.Size()].label))
+		}
+		i++
+		sb.WriteString(booltonumber(v))
+		sb.WriteString("\t")
+		if i%g.Size() == 0 {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
+
+}
+func (g *Graph) String() string {
+	var sb = strings.Builder{}
+
+	return sb.String()
 }
